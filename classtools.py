@@ -6,7 +6,9 @@ import functools
 
 
 class StoreInstances(metaclass=abc.ABCMeta):
-    """Classe abstraite permettant pour une classe de stocker ses instances."""
+    """Classe abstraite permettant pour une classe de stocker ses instances.
+
+    Les instances sont stockées dans l'attribut de classe _instances."""
 
     _instances = []
 
@@ -19,13 +21,15 @@ class StoreInstances(metaclass=abc.ABCMeta):
         cls._instances = []
         super().__init_subclass__()
 
+    def __del__(self):
+        type(self)._instances.remove(self)
+
 
 class Unique(StoreInstances, metaclass=abc.ABCMeta):
     """Classe abstraite ne laissant possible qu'une seule instance de la
     classe."""
 
     def __new__(cls):
-        print(f"New Unique pour {cls} avec _instances = {cls._instances}")
         if len(cls._instances) == 0:
             return super().__new__(cls)
         else:
@@ -36,12 +40,9 @@ def access_all(fun):
     """Décorateur permettant de transformer une fonction qui a effet sur un
     élément d'un classe en une fonction ayant effet sur tous les éléments de la
     classe."""
+
     @functools.wraps(fun)
     def new_fun(self, *args, **kwargs):
-        res = []
-        for i in self._instances:
-            res.append(fun(i, *args, **kwargs))
-
-        return res
+        return [fun(i, *args, **kwargs) for i in self._instances]
 
     return classmethod(new_fun)
